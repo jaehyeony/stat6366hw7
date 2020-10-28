@@ -1,0 +1,59 @@
+######################
+###Califonia Breweries###
+######################
+install.packages("rvest")
+library(rvest)
+library(stringr)
+page2 <- read_html("https://www.ratebeer.com/breweries/california/5/213/")
+
+brewery.names <- page2 %>%
+  html_nodes("#brewerTable a:nth-child(1)") %>%
+  html_text() %>%
+  str_replace("\\ ", "") 
+
+brewery.location <- page2 %>%
+  html_nodes(".filter") %>%
+  html_text() %>%
+  str_squish()
+
+brewery.location2 <- page2 %>%
+  html_nodes("#brewerTable span") %>%
+  html_text() 
+
+brewery.type <- page2 %>%
+  html_nodes("td.hidden-sm") %>%
+  html_text()
+
+
+beer.count <- page2 %>%
+  html_nodes(".hidden-sm+ td") %>%
+  html_text() %>%
+  str_squish() %>%
+  as.numeric()
+
+CA.breweries <- tibble(
+  Name = brewery.names, 
+  Location = c(brewery.location, brewery.location2), 
+  Type = brewery.type,
+  Beer.Count = beer.count
+)
+
+CA.breweries <- add_column(CA.breweries, Closed=c(rep(0,302), rep(1, 48)))
+
+open.breweries <- filter(CA.breweries, Closed==0)
+
+##Most prevalent type of brewery (observe from table)
+table(open.breweries$Type)
+
+##Number of cities with a brewery
+length(unique(open.breweries$Location))
+
+##Sort location count, most at the end
+sort(table(open.breweries$Location))
+
+##Mean beer count
+mean(open.breweries$Beer.Count)
+
+##Identify which row has max count, then inspect row
+which.max(open.breweries$Beer.Count)
+open.breweries[24,]
